@@ -1,23 +1,57 @@
 <!DOCTYPE html>
 <html>
     <head>
-        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
-        <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css"
-              rel="stylesheet" />
-        <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
         <title>Backup Immich Album to External Library</title>
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap"
               rel="stylesheet">
         <style>
-        #progress-label, #current-label {
-            display: block;
-            text-align: center;
-            width: 100%;
-            margin: 0 auto 8px auto;
-            font-size: 1.08em;
+        body {
+            background: #18181b;
+            color: #f4f4f5;
+            font-family: 'Inter', Arial, sans-serif;
+            margin: 0;
+            min-height: 100vh;
         }
-        #copy-progress {
-            width: 100%;
+        .custom-container {
+            max-width: 480px;
+            margin: 40px auto 0 auto;
+            background: #fff;
+            color: #232336;
+            border-radius: 18px;
+            box-shadow: 0 4px 32px 0 #0002;
+            padding: 32px 16px 24px 16px;
+        }
+        .custom-container > * {
+            max-width: 100%;
+            box-sizing: border-box;
+        }        
+        .custom-container label,
+        .custom-container h2,
+        .custom-container .form-check-label,
+        .custom-container .form-select,
+        .custom-container .form-control {
+            color: #232336 !important;
+        }
+        .custom-container .form-select,
+        .custom-container .form-control {
+            background-color: #f4f4f5 !important;
+        }
+        .custom-container .btn-primary {
+            color: #fff !important;
+        }
+        @media (max-width: 576px) {
+            .custom-container {
+                max-width: 100vw;
+                margin: 0;
+                border-radius: 0;
+                padding: 18px 2vw 18px 2vw;
+            }
         }
         #back {
             display: none;
@@ -35,78 +69,15 @@
             color: #fde68a;
         }
         #back a:visited {
-            color: #f59e42;
-        }        
-        body {
-            background: #18181b;
-            color: #f4f4f5;
-            font-family: 'Inter', Arial, sans-serif;
-            margin: 0;
-            min-height: 100vh;
-        }
-        .container {
-            max-width: 480px;
-            margin: 40px auto 0 auto;
-            background: #232336;
-            border-radius: 18px;
-            box-shadow: 0 4px 32px 0 #0002;
-            padding: 32px 28px 24px 28px;
-        }
-        h2 {
-            text-align: center;
-            font-weight: 600;
-            color: #fff;
-            margin-bottom: 28px;
-        }
-        label {
-            font-weight: 500;
-            color: #c7c7d1;
-            margin-bottom: 6px;
-            display: block;
-        }
-        .row {
-            margin: 18px 0 0 0;
-        }
-        select, .select2-container--default .select2-selection--single {
-            background: #232336;
-            color: #f4f4f5;
-            border: 1.5px solid #3b3b4f;
-            border-radius: 8px;
-            padding: 8px 12px;
-            font-size: 1rem;
-            width: 100% !important;
-            min-height: 44px;
-        }
-        .select2-container--default .select2-selection--single .select2-selection__rendered {
-            color: #f4f4f5;
-        }
-        .select2-container--default .select2-selection--single .select2-selection__arrow b {
-            border-color: #a1a1aa transparent transparent transparent;
-        }
-        button[type="submit"] {
-            background: linear-gradient(90deg, #6366f1 0%, #38bdf8 100%);
-            color: #fff;
-            border: none;
-            border-radius: 8px;
-            padding: 12px 0;
-            font-size: 1.1rem;
-            font-weight: 600;
-            width: 100%;
-            margin-top: 28px;
-            cursor: pointer;
-            transition: background 0.2s;
-        }
-        button[type="submit"]:hover {
-            background: linear-gradient(90deg, #818cf8 0%, #38bdf8 100%);
+            background: #000000ff;
         }
         .error-box {
-            background: #18181b;
-            color: #ff0000ff;
+            background: #920808ff;
+            color: #ffffffff;
             border: 1.5px solid #232336;
             font-family: 'Fira Mono', 'Consolas', 'Menlo', 'Monaco', 'Liberation Mono', monospace;
             font-size: 1.01em;
             padding: 14px 16px;
-            margin: 18px 0;
             border-radius: 8px;
             font-weight: 400;
             white-space: pre-line;
@@ -115,27 +86,33 @@
             display: none;
         }
         .success-box {
-            border: 1.5px solid #22c55e;
-            background: #1a2a1a;
-            color: #22c55e;
-            padding: 12px;
-            margin: 18px 0;
+            border: 1.5px solid #232336;
+            background: #0b710b;
+            color: #ffffffff;
+            font-family: 'Fira Mono', 'Consolas', 'Menlo', 'Monaco', 'Liberation Mono', monospace;
+            font-size: 1.01em;
+            padding: 14px 16px;
             border-radius: 8px;
-            font-weight: 600;
+            font-weight: 400;
+            white-space: pre-line;
+            box-shadow: 0 2px 12px 0 #0003;
+            letter-spacing: 0.01em;
             display: none;
         }
-        #progress-wrap { margin-top: 24px; }
-        .select2-dropdown {
-            background: #232336;
-            color: #f4f4f5;
-            border: 1.5px solid #3b3b4f;
+        #progress-label, #current-label {
+            display: block;
+            text-align: center;
+            width: 100%;
+            font-size: 1.08em;
         }
-        .select2-results__option--highlighted {
-            background: #6366f1 !important;
-            color: #fff !important;
+        #copy-progress {
+            width: 100%;
+            max-width: 100%;
+            box-sizing: border-box;
+            display: block;
         }
-        .select2-results__option {
-            color: #f4f4f5;
+        #copy-errors, #success, #back {
+            width: 100%;
         }
         input[type="checkbox"] {
             accent-color: #6366f1;
@@ -143,6 +120,14 @@
             height: 18px;
             vertical-align: middle;
         }
+        .select2-dropdown,
+        .select2-results__option {
+            color: #232336 !important;
+        }
+        .select2-results__option--highlighted {
+            background: #6366f1 !important;
+            color: #fff !important;
+        }        
         </style>
         <script>
         // Polling for copy progress
@@ -192,59 +177,45 @@
         </script>
     </head>
     <body data-job="{{ job_id or '' }}">
-        <div class="container">
-            <h2>Immich Backup Albums to External Library</h2>
+    <div class="custom-container shadow-lg bg-body rounded">
+            <h2 class="text-center fw-bold mb-4" style="color:#fff;">Immich Backup Albums to External Library</h2>
             {% if error %}<div class="error-box">{{ error | nl2br | safe }}</div>{% endif %}
             {% if albums %}
                 <form method="post" action="/submit">
-                    <div class="row">
-                        <label for="album_name">Album:</label>
-                        <select class="basic-single-select" name="album_id" id="album_name" required>
+                    <div class="mb-3">
+                        <label for="album_name" class="form-label">Album:</label>
+                        <select class="form-select basic-single-select" name="album_id" id="album_name" required>
                             <option value="" disabled {% if not selected_album %}selected{% endif %}>Select an album</option>
                             {% for album in albums %}
-                                <option value="{{ album[1] }}"
-                                        {% if selected_album == album[0] %}selected{% endif %}>{{ album[0] }}</option>
+                                <option value="{{ album[1] }}" {% if selected_album == album[0] %}selected{% endif %}>{{ album[0] }}</option>
                             {% endfor %}
                         </select>
                     </div>
-                    <div class="row">
-                        <label for="path">External Path:</label>
-                        <select class="basic-single-select" name="path" id="path" required>
+                    <div class="mb-3">
+                        <label for="path" class="form-label">External Path:</label>
+                        <select class="form-select basic-single-select" name="path" id="path" required>
                             <option value="" disabled {% if not selected_path %}selected{% endif %}>Select a path</option>
                             {% for path in paths %}
                                 <option value="{{ path }}"  {% if selected_path == path %}selected{% endif %}>{{ path }}</option>
                             {% endfor %}
                         </select>
                     </div>
-                    <div class="row">
-                        <label>
-                            <input type="checkbox"
-                                   name="create_subdir_for_year"
-                                   {% if create_subdir_for_year %}checked{% endif %}>
-                            Create Subdirectory for each Year
-                        </label>
+                    <div class="form-check mb-2">
+                        <input class="form-check-input" type="checkbox" name="create_subdir_for_year" id="create_subdir_for_year" {% if create_subdir_for_year %}checked{% endif %}>
+                        <label class="form-check-label" for="create_subdir_for_year">Create Subdirectory for each Year</label>
                     </div>
-                    <div class="row">
-                        <label>
-                            <input type="checkbox"
-                                   name="delete_assets"
-                                   {% if delete_assets %}checked{% endif %}>
-                            Delete Assets in Album
-                        </label>
+                    <div class="form-check mb-2">
+                        <input class="form-check-input" type="checkbox" name="delete_assets" id="delete_assets" {% if delete_assets %}checked{% endif %}>
+                        <label class="form-check-label" for="delete_assets">Delete Assets in Album</label>
                     </div>
-                    <div class="row">
-                        <label>
-                            <input type="checkbox"
-                                   name="delete_album"
-                                   {% if delete_album %}checked{% endif %}>
-                            Delete Album
-                        </label>
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" name="delete_album" id="delete_album" {% if delete_album %}checked{% endif %}>
+                        <label class="form-check-label" for="delete_album">Delete Album</label>
                     </div>
-                    <button type="submit">Submit</button>
+                    <button type="submit" class="btn btn-primary w-100 fw-bold" style="background: linear-gradient(90deg, #6366f1 0%, #38bdf8 100%); border: none;">Submit</button>
                 </form>
             {% endif %}
             {% if job_id %}
-                <div id="progress-wrap" class="row">
                     <label>
                         <span id="progress-label">0%</span>
                     </label>
@@ -253,13 +224,10 @@
                     </label>
                     <progress id="copy-progress" max="100" value="0"></progress>
                     <div id="copy-errors" class="error-box"></div>
-                    <div id="success" class="success-box">
-                        <h3>Done.</h3>
-                    </div>
+                    <div id="success" class="success-box">Done.</div>
                     <div id="back">
                         <a href="/">Back to start page</a>
                     </div>
-                </div>
             {% endif %}
         </div>
     </body>
