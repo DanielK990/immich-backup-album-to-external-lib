@@ -49,7 +49,6 @@ def copy_assets_job(
     else:
         album_path = os.path.join(copy_path, album_name)
 
-
     try:
         os.makedirs(album_path, exist_ok=True)
     except Exception as e:
@@ -140,7 +139,7 @@ def submit():
     copy_path = request.form.get("path")
     delete_assets = request.form.get("delete_assets") == "True"
     delete_album = request.form.get("delete_album") == "True"
-    create_subdir_for_year = request.form.get("create_subdir_for_year") == "True"
+    create_subdir_for_year = request.form.get("create_subdir_for_year") == "on"
 
     # Validate album and get assets
     try:
@@ -150,7 +149,9 @@ def submit():
         validate_result = validate_response.json()
         if not validate_result:
             error = f"Album with id '{album_id}' does not exist."
-            return render_template("immich-backup-albums-to-external-lib.html", error=error)
+            return render_template(
+                "immich-backup-albums-to-external-lib.html", error=error
+            )
         album = validate_result
         album_name = album.get("albumName")
         assets = album.get("assets", [])
