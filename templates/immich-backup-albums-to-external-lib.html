@@ -16,11 +16,23 @@
             margin: 0 auto 8px auto;
             font-size: 1.08em;
         }
-        #success {
-            display: none;
-        }
         #copy-progress {
             width: 100%;
+        }
+        #back {
+            display: none;
+            margin-top: 18px;
+            text-align: center;
+        }
+        #back a {
+            color: #fbbf24;
+            font-weight: 600;
+            text-decoration: underline;
+            font-size: 1.08em;
+            transition: color 0.2s;
+        }
+        #back a:hover {
+            color: #fde68a;
         }
         body {
             background: #18181b;
@@ -107,6 +119,7 @@
             margin: 18px 0;
             border-radius: 8px;
             font-weight: 600;
+            display: none;
         }
         #progress-wrap { margin-top: 24px; }
         .select2-dropdown {
@@ -151,6 +164,7 @@
 
                     if (Array.isArray(data.errors) && data.errors.length) {
                         errorsBox.style.display = 'block';
+                        back.style.display = 'block';
                         errorsBox.innerHTML = data.errors.map(e => `<div>${e}</div>`).join('');
                     }
 
@@ -158,6 +172,7 @@
                         clearInterval(timer);
                         if (!Array.isArray(data.errors) || data.errors.length == 0) {
                             successBox.style.display = 'block';
+                            back.style.display = 'block';
                         }
                     }
                 } catch (e) { /* ignore transient errors */ }
@@ -238,9 +253,8 @@
                     <div id="copy-errors" class="error-box"></div>
                     <div id="success" class="success-box">
                         <h3>Done.</h3>
-                    </div>
-                    <div>
-                        <a href="/">&larr; Back to start page</a>
+                    </div id="back">
+                        <a href="/">Back to start page</a>
                     </div>
                 </div>
             {% endif %}
