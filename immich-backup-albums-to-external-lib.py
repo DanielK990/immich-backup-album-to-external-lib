@@ -137,8 +137,8 @@ def submit():
 
     album_id = request.form.get("album_id")
     copy_path = request.form.get("path")
-    delete_assets = request.form.get("delete_assets") == "True"
-    delete_album = request.form.get("delete_album") == "True"
+    delete_assets = request.form.get("delete_assets") == "on"
+    delete_album = request.form.get("delete_album") == "on"
     create_subdir_for_year = request.form.get("create_subdir_for_year") == "on"
 
     # Validate album and get assets
