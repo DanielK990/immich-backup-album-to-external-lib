@@ -34,6 +34,9 @@
         #back a:hover {
             color: #fde68a;
         }
+        #back a:visited {
+            color: #f59e42;
+        }        
         body {
             background: #18181b;
             color: #f4f4f5;
@@ -164,7 +167,6 @@
 
                     if (Array.isArray(data.errors) && data.errors.length) {
                         errorsBox.style.display = 'block';
-                        back.style.display = 'block';
                         errorsBox.innerHTML = data.errors.map(e => `<div>${e}</div>`).join('');
                     }
 
@@ -172,8 +174,8 @@
                         clearInterval(timer);
                         if (!Array.isArray(data.errors) || data.errors.length == 0) {
                             successBox.style.display = 'block';
-                            back.style.display = 'block';
                         }
+                        back.style.display = 'block';
                     }
                 } catch (e) { /* ignore transient errors */ }
             }, 800);
