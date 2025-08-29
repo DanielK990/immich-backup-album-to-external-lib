@@ -1,5 +1,6 @@
 from flask import Flask, request, render_template, jsonify
 import os
+import requests
 import shutil
 import json
 import sys
@@ -113,7 +114,7 @@ def index():
         error = f"Error fetching albums: {str(e)}"
 
     return render_template(
-        "immich_externalize_albums.html",
+        "immich-backup-albums-to-external-lib.html",
         albums=albums,
         paths=EXTERNAL_LIB_PATHS.split(","),
         selected_path=selected_path,
@@ -140,7 +141,7 @@ def submit():
         validate_result = validate_response.json()
         if not validate_result:
             error = f"Album with id '{album_id}' does not exist."
-            return render_template("immich_externalize_albums.html", error=error)
+            return render_template("immich-backup-albums-to-external-lib.html", error=error)
         album = validate_result
         album_name = album.get("albumName")
         assets = album.get("assets", [])
@@ -151,7 +152,7 @@ def submit():
                 if asset.get("originalPath").startswith(path):
                     error = f"Album '{album_name}' contains images which are already in the external library."
                     return render_template(
-                        "immich_externalize_albums.html", error=error
+                        "immich-backup-albums-to-external-lib.html", error=error
                     )
 
         # Start background job
@@ -176,12 +177,12 @@ def submit():
     except Exception as e:
         error = f"Error starting copy job: {str(e)}"
         return render_template(
-            "immich_externalize_albums.html",
+            "immich-backup-albums-to-external-lib.html",
             error=error,
         )
 
     # Render progress screen (job_id triggers the progress UI)
-    return render_template("immich_externalize_albums.html", job_id=job_id)
+    return render_template("immich-backup-albums-to-external-lib.html", job_id=job_id)
 
 
 @app.route("/progress/<job_id>", methods=["GET"])
