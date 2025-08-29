@@ -22,6 +22,9 @@ The proposed workflow is as follows:
 * you can use [immich-folder-album-creator](https://github.com/Salvoxia/immich-folder-album-creator) to automatically re-create the album from the 
   external library
 
+Since immich stores metadata like tags in its database, the metadata will be lost when moving the album to an external library. It is 
+recommended to add the metadata only after the migration to the external library.
+
 ## Installation
 
 The easiest way to install the tool is to use docker compose.
