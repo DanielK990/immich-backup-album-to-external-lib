@@ -49,28 +49,37 @@ def copy_assets_job(
     else:
         album_path = os.path.join(copy_path, album_name)
 
-    os.makedirs(album_path, exist_ok=True)
 
-    # Copy assets one by one and update progress
-    for asset in assets:
-        file_name = asset.get("originalFileName")
-        dest_path = os.path.join(album_path, file_name)
-        source_path = asset.get("originalPath")
-        try:
-            with progress_lock:
-                copy_progress[job_id]["current"] = dest_path
+    try:
+        os.makedirs(album_path, exist_ok=True)
+    except Exception as e:
+        with progress_lock:
+            copy_progress[job_id]["errors"].append(
+                f"Failed to create directories {album_path}: {e}"
+            )
+            success = False
 
-            print("Copy from " + source_path + " to " + dest_path)
-            shutil.copy2(source_path, dest_path)
-        except Exception as e:
-            with progress_lock:
-                copy_progress[job_id]["errors"].append(
-                    f"Failed to copy {file_name}: {e}"
-                )
-                success = False
-        finally:
-            with progress_lock:
-                copy_progress[job_id]["done"] += 1
+    if success:
+        # Copy assets one by one and update progress
+        for asset in assets:
+            file_name = asset.get("originalFileName")
+            dest_path = os.path.join(album_path, file_name)
+            source_path = asset.get("originalPath")
+            try:
+                with progress_lock:
+                    copy_progress[job_id]["current"] = dest_path
+
+                print("Copy from " + source_path + " to " + dest_path)
+                shutil.copy2(source_path, dest_path)
+            except Exception as e:
+                with progress_lock:
+                    copy_progress[job_id]["errors"].append(
+                        f"Failed to copy {file_name}: {e}"
+                    )
+                    success = False
+            finally:
+                with progress_lock:
+                    copy_progress[job_id]["done"] += 1
 
     if success and delete_assets:
         try:
