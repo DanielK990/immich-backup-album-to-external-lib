@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+        <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css"
+              rel="stylesheet" />
+        <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+        <title>Copy Immich Album to External Library</title>
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap"
+              rel="stylesheet">
+        <style>
+        #progress-label, #current-label {
+            display: block;
+            text-align: center;
+            width: 100%;
+            margin: 0 auto 8px auto;
+            font-size: 1.08em;
+        }
+        #success {
+            display: none;
+        }
+        #copy-progress {
+            width: 100%;
+        }
+        body {
+            background: #18181b;
+            color: #f4f4f5;
+            font-family: 'Inter', Arial, sans-serif;
+            margin: 0;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 480px;
+            margin: 40px auto 0 auto;
+            background: #232336;
+            border-radius: 18px;
+            box-shadow: 0 4px 32px 0 #0002;
+            padding: 32px 28px 24px 28px;
+        }
+        h2 {
+            text-align: center;
+            font-weight: 600;
+            color: #fff;
+            margin-bottom: 28px;
+        }
+        label {
+            font-weight: 500;
+            color: #c7c7d1;
+            margin-bottom: 6px;
+            display: block;
+        }
+        .row {
+            margin: 18px 0 0 0;
+        }
+        select, .select2-container--default .select2-selection--single {
+            background: #232336;
+            color: #f4f4f5;
+            border: 1.5px solid #3b3b4f;
+            border-radius: 8px;
+            padding: 8px 12px;
+            font-size: 1rem;
+            width: 100% !important;
+            min-height: 44px;
+        }
+        .select2-container--default .select2-selection--single .select2-selection__rendered {
+            color: #f4f4f5;
+        }
+        .select2-container--default .select2-selection--single .select2-selection__arrow b {
+            border-color: #a1a1aa transparent transparent transparent;
+        }
+        button[type="submit"] {
+            background: linear-gradient(90deg, #6366f1 0%, #38bdf8 100%);
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            padding: 12px 0;
+            font-size: 1.1rem;
+            font-weight: 600;
+            width: 100%;
+            margin-top: 28px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        button[type="submit"]:hover {
+            background: linear-gradient(90deg, #818cf8 0%, #38bdf8 100%);
+        }
+        .error-box {
+            background: #18181b;
+            color: #ff0000ff;
+            border: 1.5px solid #232336;
+            font-family: 'Fira Mono', 'Consolas', 'Menlo', 'Monaco', 'Liberation Mono', monospace;
+            font-size: 1.01em;
+            padding: 14px 16px;
+            margin: 18px 0;
+            border-radius: 8px;
+            font-weight: 400;
+            white-space: pre-line;
+            box-shadow: 0 2px 12px 0 #0003;
+            letter-spacing: 0.01em;
+            display: none;
+        }
+        .success-box {
+            border: 1.5px solid #22c55e;
+            background: #1a2a1a;
+            color: #22c55e;
+            padding: 12px;
+            margin: 18px 0;
+            border-radius: 8px;
+            font-weight: 600;
+        }
+        #progress-wrap { margin-top: 24px; }
+        .select2-dropdown {
+            background: #232336;
+            color: #f4f4f5;
+            border: 1.5px solid #3b3b4f;
+        }
+        .select2-results__option--highlighted {
+            background: #6366f1 !important;
+            color: #fff !important;
+        }
+        .select2-results__option {
+            color: #f4f4f5;
+        }
+        input[type="checkbox"] {
+            accent-color: #6366f1;
+            width: 18px;
+            height: 18px;
+            vertical-align: middle;
+        }
+        </style>
+        <script>
+        // Polling for copy progress
+        async function pollProgress(jobId) {
+            if (!jobId) return;
+            const bar = document.getElementById('copy-progress');
+            const progressLabel = document.getElementById('progress-label');
+            const currentLabel = document.getElementById('current-label');
+            const errorsBox = document.getElementById('copy-errors');
+            const successBox = document.getElementById('success');
+
+            const timer = setInterval(async () => {
+                try {
+                    const res = await fetch(`/progress/${jobId}`);
+                    if (!res.ok) return; // keep trying
+                    const data = await res.json();
+                    const pct = data.percent || 0;
+                    const current = data.current || "";
+                    bar.value = pct;
+                    progressLabel.textContent = pct + '%';
+                    currentLabel.textContent = current;
+
+                    if (Array.isArray(data.errors) && data.errors.length) {
+                        errorsBox.style.display = 'block';
+                        errorsBox.innerHTML = data.errors.map(e => `<div>${e}</div>`).join('');
+                    }
+
+                    if (data.complete) {
+                        clearInterval(timer);
+                        if (!Array.isArray(data.errors) || data.errors.length == 0) {
+                            successBox.style.display = 'block';
+                        }
+                    }
+                } catch (e) { /* ignore transient errors */ }
+            }, 800);
+        }
+        window.addEventListener('load', () => {
+            const jobId = document.body.getAttribute('data-job');
+            if (jobId) pollProgress(jobId);
+        });
+
+        $(document).ready(function() {
+            $('.basic-single-select').select2();
+        });
+        
+        </script>
+    </head>
+    <body data-job="{{ job_id or '' }}">
+        <div class="container">
+            <h2>Immich Backup Albums to External Library</h2>
+            {% if error %}<div class="error-box">{{ error | nl2br | safe }}</div>{% endif %}
+            {% if albums %}
+                <form method="post" action="/submit">
+                    <div class="row">
+                        <label for="album_name">Album:</label>
+                        <select class="basic-single-select" name="album_id" id="album_name" required>
+                            <option value="" disabled {% if not selected_album %}selected{% endif %}>Select an album</option>
+                            {% for album in albums %}
+                                <option value="{{ album[1] }}"
+                                        {% if selected_album == album[0] %}selected{% endif %}>{{ album[0] }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="row">
+                        <label for="path">External Path:</label>
+                        <select class="basic-single-select" name="path" id="path" required>
+                            <option value="" disabled {% if not selected_path %}selected{% endif %}>Select a path</option>
+                            {% for path in paths %}
+                                <option value="{{ path }}"  {% if selected_path == path %}selected{% endif %}>{{ path }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="row">
+                        <label>
+                            <input type="checkbox"
+                                   name="create_subdir_for_year"
+                                   {% if create_subdir_for_year %}checked{% endif %}>
+                            Create Subdirectory for each Year
+                        </label>
+                    </div>
+                    <div class="row">
+                        <label>
+                            <input type="checkbox"
+                                   name="delete_assets"
+                                   {% if delete_assets %}checked{% endif %}>
+                            Delete Assets in Album
+                        </label>
+                    </div>
+                    <div class="row">
+                        <label>
+                            <input type="checkbox"
+                                   name="delete_album"
+                                   {% if delete_album %}checked{% endif %}>
+                            Delete Album
+                        </label>
+                    </div>
+                    <button type="submit">Submit</button>
+                </form>
+            {% endif %}
+            {% if job_id %}
+                <div id="progress-wrap" class="row">
+                    <label>
+                        <span id="progress-label">0%</span>
+                    </label>
+                    <label>
+                        <span id="current-label"></span>
+                    </label>
+                    <progress id="copy-progress" max="100" value="0"></progress>
+                    <div id="copy-errors" class="error-box"></div>
+                    <div id="success" class="success-box">
+                        <h3>Done.</h3>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </body>
+</html>
