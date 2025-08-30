@@ -64,7 +64,7 @@ You can also remove the user option, then the container is executed with root ri
 Create a file `.backup-album-to-external-lib-env` with the following content:
 
 ```
-API_KEY=<your immich API key>
+API_KEYS=<user-id>:<immich API key>,<user-id>:<immich API key>,...
 IMMICH_SERVER=<immich server URL with http/https prefix, e.g. http://immich.fritz.box>
 IMMICH_PORT=<immich port, usually 2283>
 EXTERNAL_LIB_PATHS=<comma-separated list of the paths of external libraries>
@@ -76,7 +76,7 @@ WEBUI_PORT=<web UI port, e.g. 8000>
 Example:
 
 ```
-API_KEY=zDxV33G5eLRhIwDfJMlJOw25CQAMhzP7a7r5nHlux0
+API_KEYS=john:zDxV33G5eLRhIwDfJMlJOw25CQAMhzP7a7r5nHlux0,carla:eDxV36G5eLdhIwDfJM4JOwg5CQAMIzP7a7r5nHlux7
 IMMICH_SERVER=http://immich.fritz.box
 IMMICH_PORT=2283
 EXTERNAL_LIB_PATHS=/media/Bilder/BilderGemeinsam,/media/Videos
@@ -84,6 +84,9 @@ WEBUI_IP=127.0.0.1
 WEBUI_PORT=8000
 
 ```
+
+API_KEYS contains key/value pairs where the key is the user id and the value is the API key. This is required 
+in case you use multiple users because immich does not allow a user to delete assets owned by other users.
 
 #### Run Container
 

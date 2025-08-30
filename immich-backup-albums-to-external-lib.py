@@ -19,11 +19,24 @@ def nl2br_filter(s):
     return (s or "").replace("\n", "<br>")
 
 
+def get_first_api_key():
+    api_keys = API_KEYS.split(",")
+    return api_keys[0].split(":", 1)[1] if api_keys else None
+
+
+def get_api_key_by_user_id(user_id):
+    for key in API_KEYS.split(","):
+        if key.startswith(f"{user_id}:"):
+            return key.split(":", 1)[1]
+    return None
+
+
 def copy_assets_job(
     job_id,
     assets,
     album_name,
     album_id,
+    album_owner_id,
     start_date,
     delete_assets,
     delete_album,
@@ -82,18 +95,29 @@ def copy_assets_job(
 
     if success and delete_assets:
         try:
-            headers = {"x-api-key": API_KEY, "Content-Type": "application/json"}
-            assets_url = IMMICH_SERVER + ":" + IMMICH_PORT + "/api/assets"
-            body = json.dumps({"ids": [asset.get("id") for asset in assets]})
-            response = requests.delete(assets_url, headers=headers, data=body)
-            response.raise_for_status()
+
+            asset_ids_by_owner_id = {}
+            for asset in assets:
+                if asset["ownerId"] not in asset_ids_by_owner_id:
+                    asset_ids_by_owner_id[asset["ownerId"]] = set()
+                asset_ids_by_owner_id[asset["ownerId"]].add(asset["id"])
+
+            for owner_id in asset_ids_by_owner_id.keys():
+                headers = {
+                    "x-api-key": get_api_key_by_user_id(owner_id),
+                    "Content-Type": "application/json",
+                }
+                assets_url = IMMICH_SERVER + ":" + IMMICH_PORT + "/api/assets"
+                body = json.dumps({"ids": list(asset_ids_by_owner_id[owner_id])})
+                response = requests.delete(assets_url, headers=headers, data=body)
+                response.raise_for_status()
         except Exception as e:
             copy_progress[job_id]["errors"].append(f"Error deleting assets: {str(e)}")
             success = False
 
     if success and delete_album:
         try:
-            headers = {"x-api-key": API_KEY}
+            headers = {"x-api-key": get_api_key_by_user_id(album_owner_id)}
             albums_url = IMMICH_SERVER + ":" + IMMICH_PORT + "/api/albums/" + album_id
             response = requests.delete(albums_url, headers=headers)
             response.raise_for_status()
@@ -111,7 +135,7 @@ def index():
     albums = []
     selected_path = EXTERNAL_LIB_PATHS.split(",")[0]
     try:
-        headers = {"x-api-key": API_KEY}
+        headers = {"x-api-key": get_first_api_key()}
         albums_url = IMMICH_SERVER + ":" + IMMICH_PORT + "/api/albums"
         response = requests.get(albums_url, headers=headers)
         response.raise_for_status()
@@ -143,7 +167,7 @@ def submit():
 
     # Validate album and get assets
     try:
-        headers = {"x-api-key": API_KEY}
+        headers = {"x-api-key": get_first_api_key()}
         albums_url = IMMICH_SERVER + ":" + IMMICH_PORT + "/api/albums/" + album_id
         validate_response = requests.get(albums_url, headers=headers)
         validate_result = validate_response.json()
@@ -154,6 +178,7 @@ def submit():
             )
         album = validate_result
         album_name = album.get("albumName")
+        album_owner_id = album.get("ownerId")
         assets = album.get("assets", [])
         start_date = album.get("startDate")
 
@@ -174,6 +199,7 @@ def submit():
                 assets,
                 album_name,
                 album_id,
+                album_owner_id,
                 start_date,
                 delete_assets,
                 delete_album,
@@ -217,7 +243,7 @@ def progress(job_id):
 
 if __name__ == "__main__":
 
-    API_KEY = os.getenv("API_KEY", "")
+    API_KEYS = os.getenv("API_KEYS", "")
     EXTERNAL_LIB_PATHS = os.getenv("EXTERNAL_LIB_PATHS", "")
     IMMICH_SERVER = os.getenv("IMMICH_SERVER", "")
     IMMICH_PORT = os.getenv("IMMICH_PORT", "")
@@ -226,9 +252,9 @@ if __name__ == "__main__":
 
     error = False
 
-    if not API_KEY:
+    if not API_KEYS:
         print(
-            "API key is missing. Please set the API_KEY environment variable.",
+            "API keys are missing. Please set the API_KEYS environment variable.",
             file=sys.stderr,
         )
         error = True
