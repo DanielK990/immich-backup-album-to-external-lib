@@ -10,7 +10,7 @@ from threading import Thread, Lock
 
 
 # Configure logging
-logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
+logging.basicConfig(level=logging.DEBUG, format="%(asctime)s %(levelname)s %(message)s")
 app = Flask(__name__)
 
 # In-memory job tracking
@@ -33,6 +33,13 @@ def get_api_key_by_user_id(user_id):
         if key.startswith(f"{user_id}:"):
             return key.split(":", 1)[1]
     return None
+
+
+def is_external_asset(asset):
+    for path in EXTERNAL_LIB_PATHS.split(","):
+        if asset["originalPath"].startswith(path):
+            return True
+    return False
 
 
 def copy_assets_job(
@@ -88,8 +95,12 @@ def copy_assets_job(
                 with progress_lock:
                     copy_progress[job_id]["current"] = dest_path
 
-                logging.info(f"Copy from {source_path} to {dest_path}")
-                shutil.copy2(source_path, dest_path)
+                if is_external_asset(asset):
+                    logging.info(f"Skipping external asset {source_path}")
+                else:
+                    logging.info(f"Copy from {source_path} to {dest_path}")
+                    shutil.copy2(source_path, dest_path)
+
             except Exception as e:
                 with progress_lock:
                     copy_progress[job_id]["errors"].append(
@@ -105,9 +116,15 @@ def copy_assets_job(
 
             asset_ids_by_owner_id = {}
             for asset in assets:
+                source_path = asset.get("originalPath")
+                # skip external assets when deleting
+                if is_external_asset(asset):
+                    logging.info(f"Skipping external asset {source_path}")
+                    continue
                 if asset["ownerId"] not in asset_ids_by_owner_id:
                     asset_ids_by_owner_id[asset["ownerId"]] = set()
                 asset_ids_by_owner_id[asset["ownerId"]].add(asset["id"])
+                logging.info(f"Deleting internal asset {source_path}")
 
             for owner_id in asset_ids_by_owner_id.keys():
                 headers = {
@@ -189,14 +206,6 @@ def submit():
         album_owner_id = album.get("ownerId")
         assets = album.get("assets", [])
         start_date = album.get("startDate")
-
-        for asset in assets:
-            for path in EXTERNAL_LIB_PATHS.split(","):
-                if asset.get("originalPath").startswith(path):
-                    error = f"Album '{album_name}' contains images which are already in the external library."
-                    return render_template(
-                        "immich-backup-albums-to-external-lib.html", error=error
-                    )
 
         logging.info("Start background job")
         # Start background job
