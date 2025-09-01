@@ -1,3 +1,4 @@
+import logging
 from flask import Flask, request, render_template, jsonify
 import os
 import requests
@@ -7,6 +8,9 @@ import sys
 from uuid import uuid4
 from threading import Thread, Lock
 
+
+# Configure logging
+logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 app = Flask(__name__)
 
 # In-memory job tracking
@@ -55,7 +59,7 @@ def copy_assets_job(
     success = True
     album_path = ""
 
-    print("Start copying assets to external library")
+    logging.info("Start copying assets to external library")
 
     # Ensure album directory exists
     if create_subdir_for_year:
@@ -65,6 +69,7 @@ def copy_assets_job(
         album_path = os.path.join(copy_path, album_name)
 
     try:
+        logging.info(f"Create directory {album_path}")
         os.makedirs(album_path, exist_ok=True)
     except Exception as e:
         with progress_lock:
@@ -83,7 +88,7 @@ def copy_assets_job(
                 with progress_lock:
                     copy_progress[job_id]["current"] = dest_path
 
-                print("Copy from " + source_path + " to " + dest_path)
+                logging.info(f"Copy from {source_path} to {dest_path}")
                 shutil.copy2(source_path, dest_path)
             except Exception as e:
                 with progress_lock:
@@ -167,6 +172,7 @@ def submit():
     delete_album = request.form.get("delete_album") == "on"
     create_subdir_for_year = request.form.get("create_subdir_for_year") == "on"
 
+    logging.info("Validate input")
     # Validate album and get assets
     try:
         headers = {"x-api-key": get_first_api_key()}
@@ -192,6 +198,7 @@ def submit():
                         "immich-backup-albums-to-external-lib.html", error=error
                     )
 
+        logging.info("Start background job")
         # Start background job
         job_id = str(uuid4())
         thread = Thread(
@@ -255,44 +262,38 @@ if __name__ == "__main__":
     error = False
 
     if not API_KEYS:
-        print(
-            "API keys are missing. Please set the API_KEYS environment variable.",
-            file=sys.stderr,
+        logging.error(
+            "API keys are missing. Please set the API_KEYS environment variable."
         )
         error = True
 
     if not EXTERNAL_LIB_PATHS:
-        print(
-            "External library paths are missing. Please set the EXTERNAL_LIB_PATHS environment variable.",
-            file=sys.stderr,
+        logging.error(
+            "External library paths are missing. Please set the EXTERNAL_LIB_PATHS environment variable."
         )
         error = True
 
     if not IMMICH_SERVER:
-        print(
-            "immich server is missing. Please set the IMMICH_SERVER environment variable.",
-            file=sys.stderr,
+        logging.error(
+            "immich server is missing. Please set the IMMICH_SERVER environment variable."
         )
         error = True
 
     if not IMMICH_PORT:
-        print(
-            "immich port is missing. Please set the IMMICH_PORT environment variable.",
-            file=sys.stderr,
+        logging.error(
+            "immich port is missing. Please set the IMMICH_PORT environment variable."
         )
         error = True
 
     if not WEBUI_IP:
-        print(
-            "webui ip is missing. Please set the WEBUI_IP environment variable.",
-            file=sys.stderr,
+        logging.error(
+            "webui ip is missing. Please set the WEBUI_IP environment variable."
         )
         error = True
 
     if not WEBUI_PORT:
-        print(
-            "webui port is missing. Please set the WEBUI_PORT environment variable.",
-            file=sys.stderr,
+        logging.error(
+            "webui port is missing. Please set the WEBUI_PORT environment variable."
         )
         error = True
 
