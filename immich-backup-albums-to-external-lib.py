@@ -55,6 +55,8 @@ def copy_assets_job(
     success = True
     album_path = ""
 
+    print("Start copying assets to external library")
+
     # Ensure album directory exists
     if create_subdir_for_year:
         year = start_date.split("-")[0] if start_date else "Unknown"

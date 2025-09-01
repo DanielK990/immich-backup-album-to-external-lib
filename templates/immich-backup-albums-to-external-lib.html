@@ -71,7 +71,7 @@
         #back a:visited {
             background: #000000ff;
         }
-        .error-box {
+        .error-box, .error-box-static {
             background: #920808ff;
             color: #ffffffff;
             border: 1.5px solid #232336;
@@ -85,6 +85,11 @@
             letter-spacing: 0.01em;
             display: none;
         }
+
+        .error-box-static {
+            display: block;
+        }
+
         .success-box {
             border: 1.5px solid #232336;
             background: #0b710b;
@@ -179,7 +184,7 @@
     <body data-job="{{ job_id or '' }}">
     <div class="custom-container shadow-lg bg-body rounded">
             <h2 class="text-center fw-bold mb-4" style="color:#fff;">Immich Backup Albums to External Library</h2>
-            {% if error %}<div class="error-box">{{ error | nl2br | safe }}</div>{% endif %}
+            {% if error %}<div class="error-box-static">{{ error | nl2br | safe }}</div>{% endif %}
             {% if albums %}
                 <form method="post" action="/submit">
                     <div class="mb-3">
