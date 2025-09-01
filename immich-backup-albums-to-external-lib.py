@@ -17,6 +17,14 @@ app = Flask(__name__)
 progress_lock = Lock()
 copy_progress = {}  # job_id -> {done, total, errors: [], complete: bool}
 
+API_KEYS = os.getenv("API_KEYS", "")
+EXTERNAL_LIB_PATHS = os.getenv("EXTERNAL_LIB_PATHS", "")
+IMMICH_SERVER = os.getenv("IMMICH_SERVER", "")
+IMMICH_PORT = os.getenv("IMMICH_PORT", "")
+WEBUI_IP = os.getenv("WEBUI_IP", "")
+WEBUI_PORT = os.getenv("WEBUI_PORT", "")
+DRY_RUN = os.getenv("DRY_RUN", "false").lower() == "true"
+
 
 @app.template_filter("nl2br")
 def nl2br_filter(s):
@@ -77,7 +85,8 @@ def copy_assets_job(
 
     try:
         logging.info(f"Create directory {album_path}")
-        os.makedirs(album_path, exist_ok=True)
+        if not DRY_RUN:
+            os.makedirs(album_path, exist_ok=True)
     except Exception as e:
         with progress_lock:
             copy_progress[job_id]["errors"].append(
@@ -99,7 +108,8 @@ def copy_assets_job(
                     logging.info(f"Skipping external asset {source_path}")
                 else:
                     logging.info(f"Copy from {source_path} to {dest_path}")
-                    shutil.copy2(source_path, dest_path)
+                    if not DRY_RUN:
+                        shutil.copy2(source_path, dest_path)
 
             except Exception as e:
                 with progress_lock:
@@ -127,24 +137,29 @@ def copy_assets_job(
                 logging.info(f"Deleting internal asset {source_path}")
 
             for owner_id in asset_ids_by_owner_id.keys():
-                headers = {
-                    "x-api-key": get_api_key_by_user_id(owner_id),
-                    "Content-Type": "application/json",
-                }
-                assets_url = IMMICH_SERVER + ":" + IMMICH_PORT + "/api/assets"
-                body = json.dumps({"ids": list(asset_ids_by_owner_id[owner_id])})
-                response = requests.delete(assets_url, headers=headers, data=body)
-                response.raise_for_status()
+                if not DRY_RUN:
+                    headers = {
+                        "x-api-key": get_api_key_by_user_id(owner_id),
+                        "Content-Type": "application/json",
+                    }
+                    assets_url = IMMICH_SERVER + ":" + IMMICH_PORT + "/api/assets"
+                    body = json.dumps({"ids": list(asset_ids_by_owner_id[owner_id])})
+                    response = requests.delete(assets_url, headers=headers, data=body)
+                    response.raise_for_status()
         except Exception as e:
             copy_progress[job_id]["errors"].append(f"Error deleting assets: {str(e)}")
             success = False
 
     if success and delete_album:
         try:
-            headers = {"x-api-key": get_api_key_by_user_id(album_owner_id)}
-            albums_url = IMMICH_SERVER + ":" + IMMICH_PORT + "/api/albums/" + album_id
-            response = requests.delete(albums_url, headers=headers)
-            response.raise_for_status()
+            logging.info(f"Deleting internal album {album_name}")
+            if not DRY_RUN:
+                headers = {"x-api-key": get_api_key_by_user_id(album_owner_id)}
+                albums_url = (
+                    IMMICH_SERVER + ":" + IMMICH_PORT + "/api/albums/" + album_id
+                )
+                response = requests.delete(albums_url, headers=headers)
+                response.raise_for_status()
         except Exception as e:
             copy_progress[job_id]["errors"].append(f"Error deleting album: {str(e)}")
             success = False
@@ -158,6 +173,9 @@ def index():
     error = None
     albums = []
     selected_path = EXTERNAL_LIB_PATHS.split(",")[0]
+    dry_run = None
+    if DRY_RUN:
+        dry_run = True
     try:
         headers = {"x-api-key": get_first_api_key()}
         albums_url = IMMICH_SERVER + ":" + IMMICH_PORT + "/api/albums"
@@ -176,6 +194,7 @@ def index():
         selected_path=selected_path,
         create_subdir_for_year=True,
         error=error,
+        dry_run=dry_run,
     )
 
 
@@ -260,13 +279,6 @@ def progress(job_id):
 
 
 if __name__ == "__main__":
-
-    API_KEYS = os.getenv("API_KEYS", "")
-    EXTERNAL_LIB_PATHS = os.getenv("EXTERNAL_LIB_PATHS", "")
-    IMMICH_SERVER = os.getenv("IMMICH_SERVER", "")
-    IMMICH_PORT = os.getenv("IMMICH_PORT", "")
-    WEBUI_IP = os.getenv("WEBUI_IP", "")
-    WEBUI_PORT = os.getenv("WEBUI_PORT", "")
 
     error = False
 
